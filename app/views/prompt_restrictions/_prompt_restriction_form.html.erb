@@ -36,9 +36,9 @@ is verbose-->
     <% end %>
     <dl>
       <% if type == "gift_exchange" %>
-        <%= prompt_restriction_settings(prompt_restriction_form, (is_offer ? false : true), true) %>
+        <%= prompt_restriction_settings(prompt_restriction_form, true) %>
       <% else %>
-        <%= prompt_restriction_settings(prompt_restriction_form, (is_offer ? false : true), false) %>
+        <%= prompt_restriction_settings(prompt_restriction_form, false) %>
       <% end %>
     </dl>
   </fieldset>

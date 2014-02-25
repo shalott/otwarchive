@@ -10,7 +10,7 @@ module PromptRestrictionsHelper
     end
   end
 
-  def prompt_restriction_settings(form, include_description = false, allowany)
+  def prompt_restriction_settings(form, allowany)
     
     result = "<!-- prompt restriction settings helper function -->".html_safe
     result += content_tag(:dt, form.label(:optional_tags_allowed, ts("Optional Tags?")) +
