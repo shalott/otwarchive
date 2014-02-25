@@ -109,6 +109,34 @@ FactoryGirl.define do
     end
   end
 
+  factory :subscription do |f|
+    f.association :user
+    f.subscribable_type "Series"
+    f.subscribable_id { FactoryGirl.create(:series).id }
+  end
+
+  ### CHALLENGES
+
+  # Our default prompt_restriction requires 1 fandom, 1 character
+  factory :prompt_restriction do |f|
+    f.fandom_num_required 1
+    f.character_num_required 1
+  end      
+  
+  factory :potential_match_settings do |f|
+    f.num_required_fandoms 1
+    f.num_required_characters 1
+  end
+  
+  factory :gift_exchange do |f|
+    f.signup_open true
+    f.potential_match_settings FactoryGirl.create(:potential_match_settings)
+    f.request_restriction FactoryGirl.create(:prompt_restriction, :fandom_num_allowed => 2, :character_num_allowed => 2)
+    f.offer_restriction FactoryGirl.create(:prompt_restriction, :fandom_num_allowed => 2, :character_num_allowed => 2)
+  end
+      
+  ### COLLECTIONS
+
   factory :collection_participant do |f|
     f.association :pseud
     f.participant_role "Owner"
@@ -129,12 +157,11 @@ FactoryGirl.define do
     after(:build) do |collection|
       collection.collection_participants.build(pseud_id: FactoryGirl.create(:pseud).id, participant_role: "Owner")
     end
-  end
-
-  factory :subscription do |f|
-    f.association :user
-    f.subscribable_type "Series"
-    f.subscribable_id { FactoryGirl.create(:series).id }
+    
+    trait :gift_exchange do
+      challenge FactoryGirl.create(:gift_exchange)      
+    end
+    
   end
 
   factory :owned_tag_set do |f|
@@ -162,9 +189,12 @@ FactoryGirl.define do
   factory :challenge_signup do |f|
     after(:build) do |signup|
       signup.pseud_id = FactoryGirl.create(:pseud).id unless signup.pseud_id
-      signup.collection_id = FactoryGirl.create(:collection, :challenge => GiftExchange.new).id unless signup.collection_id
+      signup.collection_id = FactoryGirl.create(:collection, :challenge => FactoryGirl.create(:gift_exchange)).id unless signup.collection_id
       signup.offers.build(pseud_id: signup.pseud_id, collection_id: signup.collection_id)
       signup.requests.build(pseud_id: signup.pseud_id, collection_id: signup.collection_id)
     end
   end
+  
+  
+  
 end
