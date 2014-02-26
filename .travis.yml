@@ -25,7 +25,7 @@ before_script:
   - cp config/database.travis.yml config/database.yml
   - cp config/newrelic.example config/newrelic.yml
   - cp config/redis-cucumber.conf.example config/redis-cucumber.conf
-  - cp config/redis.example config/redis.yml
+  - cp config/redis.travis.example config/redis.yml
 notifications:
   email:
     recipients:
