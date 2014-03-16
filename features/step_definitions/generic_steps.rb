@@ -23,7 +23,7 @@ Then /^show me the main content$/ do
   puts "\n" + find("#main").native.inner_html
 end
 
-Then /^show me the errors$/ do 
+Then /^show me the errors$/ do
   puts "\n" + find("div.error").native.inner_html
 end
 
@@ -91,27 +91,20 @@ Then /^I should see a success message$/ do
 end
 
 Then /^I should find "([^"]*)"(?: within "([^"]*)")?$/ do |text, selector|
-  with_scope(selector) do
-    page.all(text)
-  end
+  (selector.present? ? find(selector) : page).should have_content(text)
 end
 
 Then /^I should find '([^']*)'(?: within "([^"]*)")?$/ do |text, selector|
-  with_scope(selector) do
-    page.all(text)
-  end
+  (selector.present? ? find(selector) : page).should have_content(text)
 end
 
 Then /^I should not find "([^"]*)"(?: within "([^"]*)")?$/ do |text, selector|
-  with_scope(selector) do
-    page.all(text)
-  end
+  (selector.present? ? find(selector) : page).should_not have_content(text)
 end
 
 Then /^I should see the "(alt|title)" text "([^\"]*)"(?: within "([^"]*)")?$/ do |texttype, text, selector|
-  with_scope(selector) do
-    (texttype == "alt") ? (page.should have_xpath("//img[@alt='#{text}']")) : (page.should have_xpath("//img[@title='#{text}']"))
-  end
+  element = (selector.present? ? find(selector) : page)
+  (texttype == "alt") ? (element.should have_xpath("//img[@alt='#{text}']")) : (element.should have_xpath("//img[@title='#{text}']"))
 end
 
 Then /^I should not see the "(alt|title)" text "([^\"]*)"(?: within "([^"]*)")?$/ do |texttype, text, selector|
@@ -192,9 +185,9 @@ end
 # These submit steps will only find submit tags inside a <p class="submit">
 # That wrapping paragraph tag will be generated automatically if you use
 # the submit_button or submit_fieldset helpers in application_helper.rb
-# The text on the button will not matter and can be changed without breaking tests. 
+# The text on the button will not matter and can be changed without breaking tests.
 #
-# NOTE: 
+# NOTE:
 # If you have multiple forms on a page you will need to specify which one you want to submit with, eg,
 # "I submit with the 2nd button", but in those cases you probably want to make sure that
 # the different forms have different button text anyway, and submit them using
@@ -245,4 +238,3 @@ end
 When /^I want to search for exactly one term$/ do
   Capybara.exact = true
 end
-

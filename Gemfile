@@ -71,7 +71,7 @@ gem "google_visualr", ">= 2.1"
 # Coveralls for code test coverage
 gem 'coveralls', require: false
 
-#  Place the New Relic gem as low in the list as possible, allowing the 
+#  Place the New Relic gem as low in the list as possible, allowing the
 #  frameworks above it to be instrumented when the gem initializes.
 gem 'newrelic_rpm', "3.7.2.192"
 gem 'newrelic-redis'
@@ -87,7 +87,7 @@ group :test do
   gem 'capybara'
   gem 'database_cleaner'
   gem 'cucumber-rails', require: false
-  gem 'gherkin' 
+  gem 'gherkin'
   gem 'launchy'    # So you can do Then show me the page
   # automatically record http requests and save them to make
   # cuke fast
@@ -95,6 +95,9 @@ group :test do
   gem "vcr", "~> 2.5.0"
   gem 'delorean'
   gem 'faker'
+  # for headless browser/javascript testing
+  gem 'poltergeist'
+  gem 'phantomjs', :require => 'phantomjs/poltergeist'
 end
 
 group :test, :development do

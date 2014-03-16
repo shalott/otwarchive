@@ -40,39 +40,40 @@ Given /^I am logged in as "([^\"]*)" with password "([^\"]*)"$/ do |login, passw
     user.save
   end
   visit login_path
-  fill_in "User name", :with => login
-  fill_in "Password", :with => password
-  check "Remember Me"
-  click_button "Log In"
-  assert UserSession.find
+  within("#loginform") do
+    fill_in "User name", :with => login
+    fill_in "Password", :with => password
+    check "Remember Me"
+    find_field('User name').value.should eq login
+    find_field('Password').value.should eq password
+    click_button "Log in"
+  end
 end
 
 Given /^I am logged in as "([^\"]*)"$/ do |login|
-  step(%{I am logged in as "#{login}" with password "#{DEFAULT_PASSWORD}"})
+  step %{I am logged in as "#{login}" with password "#{DEFAULT_PASSWORD}"}
 end
 
 Given /^I am logged in$/ do
-  step(%{I am logged in as "#{DEFAULT_USER}"})
+  step %{I am logged in as "#{DEFAULT_USER}" with password "#{DEFAULT_PASSWORD}"}
 end
 
 Given /^I am logged in as a random user$/ do
-  step("I am logged out")
   name = "testuser#{User.count + 1}"
   user = FactoryGirl.create(:user, :login => name, :password => DEFAULT_PASSWORD)
   user.activate
-  visit login_path
-  fill_in "User name", :with => name
-  fill_in "Password", :with => DEFAULT_PASSWORD
-  check "Remember me"
-  click_button "Log In"
-  assert UserSession.find
+  step %{I am logged in as "#{name}" with password "#{DEFAULT_PASSWORD}"}
 end
 
 Given /^I am logged out$/ do
-  visit logout_path
-  assert !UserSession.find
-  visit admin_logout_path
-  assert !AdminSession.find
+  if UserSession.find
+    visit logout_path
+    assert !UserSession.find
+  end
+  if AdminSession.find
+    visit admin_logout_path
+    assert !AdminSession.find
+  end
 end
 
 Given /^I log out$/ do

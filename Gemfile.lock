@@ -66,6 +66,7 @@ GEM
     chronic (0.9.1)
     climate_control (0.0.3)
       activesupport (>= 3.0)
+    cliver (0.3.2)
     cocaine (0.5.1)
       climate_control (>= 0.0.3, < 1.0)
     coderay (1.1.0)
@@ -172,9 +173,15 @@ GEM
       mime-types
     permit_yo (2.1.4)
       activesupport (~> 3.0)
+    phantomjs (1.9.7.0)
     pickle (0.4.11)
       cucumber (>= 0.8)
       rake
+    poltergeist (1.5.0)
+      capybara (~> 2.1)
+      cliver (~> 0.3.1)
+      multi_json (~> 1.0)
+      websocket-driver (>= 0.2.0)
     polyglot (0.3.3)
     pry (0.9.12.4)
       coderay (~> 1.0)
@@ -301,6 +308,7 @@ GEM
     vegas (0.1.11)
       rack (>= 1.0.0)
     webrobots (0.1.1)
+    websocket-driver (0.3.2)
     whenever (0.6.8)
       aaronh-chronic (>= 0.3.9)
       activesupport (>= 2.3.4)
@@ -346,7 +354,9 @@ DEPENDENCIES
   nokogiri (>= 1.4.2)
   paperclip
   permit_yo
+  phantomjs
   pickle
+  poltergeist
   pry
   rails (= 3.2.13)
   redis (>= 3.0)
