@@ -122,6 +122,11 @@ Then /^I should see "([^"]*)" in the "([^"]*)" input/ do |content, labeltext|
   find_field("#{labeltext}").value.should == content
 end
 
+Then /^I should see the embedded image "([^"]*)"(?: within "([^"]*)")?$/ do |imgurl, selector|
+  element = (selector.present? ? find(selector) : page)
+  element.should have_xpath("//img[@src='#{imgurl}']")
+end
+
 When /^"([^\"]*)" is fixed$/ do |what|
   puts "\nDEFERRED (#{what})"
 end

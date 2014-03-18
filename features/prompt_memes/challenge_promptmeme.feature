@@ -1348,7 +1348,7 @@ Feature: Prompt Meme Challenge
     And I edit the work "Here's one I made earlier"
     And I check "Battle 12"
     And I press "Preview"
-  Then I should find "draft"
+  Then I should find "Draft"
     And I should see "In response to a prompt by"
     # TODO: Figure out why this isn't showing - it works fine when testing manually
   #  And I should see "Collections:"

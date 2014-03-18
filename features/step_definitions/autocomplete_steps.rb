@@ -17,12 +17,11 @@ Given /^a set of tags for testing autocomplete$/ do
 end
 
 Then /^I should see "([^\"]+)" in the autocomplete$/ do |string|
-#  save_screenshot("looking_for_#{string}.png", selector: 'fieldset.work.meta')
   step %{I should find "#{string}" within "div.autocomplete.dropdown"}
 end
 
 Then /^I should not see "([^\"]+)" in the autocomplete$/ do |string|
-  step %{I should not find "#{string.gsub(/\'/, '\'')}" within ".autocomplete"}
+  step %{I should not find "#{string.gsub(/\'/, '\'')}" within "div.autocomplete.dropdown"}
 end
 
 # this is needed for values like 'Allo 'Allo that can't be handled right
