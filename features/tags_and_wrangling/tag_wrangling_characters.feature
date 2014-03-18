@@ -2,6 +2,7 @@
 
 Feature: Tag Wrangling - Characters
 
+@javascript
 Scenario: character wrangling - syns, mergers, characters, autocompletes
 
   Given the following activated tag wrangler exists

@@ -60,6 +60,7 @@ Feature: Create Works
     When I go to the works page
     Then I should see "All Hell Breaks Loose"
 
+  @javascript
   Scenario: Creating a new work with everything filled in, and we do mean everything
     Given basic tags
       And a category exists with name: "Gen", canonical: true

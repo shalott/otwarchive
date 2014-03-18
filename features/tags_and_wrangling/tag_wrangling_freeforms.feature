@@ -2,6 +2,7 @@
 
 Feature: Tag Wrangling - Freeforms
 
+@javascript
 Scenario: freeforms wrangling - syns, mergers, autocompletes, metatags
 
   Given the following activated tag wrangler exists
