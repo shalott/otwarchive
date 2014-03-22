@@ -2,14 +2,23 @@ Feature: Display autocomplete for tags
   In order to facilitate posting
   I should be getting autocompletes for my tags
 
+#@javascript
+#Scenario: Autocomplete should display a message when activated
+#  Given I am logged in
+#    And I go to the new work page
+#  When I enter "" in the fandom autocomplete field
+#    Then I should find "Start typing" within "div.autocomplete.dropdown p"
+#  When I enter "s" in the fandom autocomplete field
+#    Then I should find "Searching" within "div.autocomplete.dropdown p"
+#
 @javascript
-Scenario: Autocomplete should display a message when activated
-  Given I am logged in
-    And I go to the new work page
-  When I enter "" in the fandom autocomplete field
-    Then I should see "Start typing" in the autocomplete
-  When I enter "s" in the fandom autocomplete field
-    Then I should see "Searching" in the autocomplete
+Scenario: Autocomplete should work for fandom
+Given I am logged in
+  And a set of tags for testing autocomplete
+  And I go to the new work page
+When I enter "sup" in the fandom autocomplete field
+  Then I should find "Supernatural" in the fandom autocomplete
+  
 
 
 # @javascript

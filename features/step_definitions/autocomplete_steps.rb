@@ -16,8 +16,8 @@ Given /^a set of tags for testing autocomplete$/ do
   step %{a noncanonical freeform "alternate sundays"}
 end
 
-Then /^I should see "([^\"]+)" in the autocomplete$/ do |string|
-  step %{I should find "#{string}" within "div.autocomplete.dropdown"}
+Then /^I should see "([^\"]+)" in the autocomplete$/ do |string|  
+  find("div.autocomplete.dropdown ul").should have_content(string)
 end
 
 Then /^I should not see "([^\"]+)" in the autocomplete$/ do |string|
@@ -50,9 +50,12 @@ When /^I enter text in the (\w+) autocomplete field$/ do |fieldtype|
     end
     # We have to use this because the original input field gets hidden and replaced with
     # a new input field by the tokeninput javascript
-    element = find("dd.#{fieldtype}#{fieldtype == 'fandom' ? '.required' : ''} ul.autocomplete li.input input.text")
+    element = find("dd.#{fieldtype} ul.autocomplete li.input input.text")
     element.native.send_key(input)
-    step %{I should find "Searching" within "div.autocomplete.dropdown"}
+end
+
+Then /^I should find "([^"]*)" in the (\w+) autocomplete$/ do |string, fieldtype|
+  step %{I should find "#{string}" within "dd.#{fieldtype} div.autocomplete.dropdown ul"}
 end
 
 When /^I specify a fandom and enter text in the character autocomplete field$/ do
