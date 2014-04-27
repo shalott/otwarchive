@@ -32,16 +32,17 @@ namespace :massimport do
 
   # send invitations to external authors for a given set of works
   def send_external_invites(work_ids, archivist)
-    @users = User.select("DISTINCT users.*").joins(:creatorships).where("creation_id IN (?) AND creation_type = 'Work'", work_ids)
-    @users.each do |user|
-      UserMailer.deliver_claim_notification(user.id, work_ids, true)
+    user_ids = User.select("DISTINCT users.*").joins(:pseuds => :creatorships).where("creation_id IN (?) AND creation_type = 'Work'", work_ids).value_of(:id).uniq
+    user_ids -= [archivist.id]
+    user_ids.each do |user_id|
+      user_work_ids = Work.joins(:creatorships => :pseud).where("pseuds.user_id = ? AND works.id IN (?)", user_id, work_ids).value_of(:id)
+      UserMailer.claim_notification(user_id, user_work_ids, true).deliver
     end
-    @external_authors = ExternalAuthor.select("DISTINCT external_authors.*").joins(:external_creatorships).where("creation_id IN (?) AND creation_type = 'Work'", work_ids)
-    @external_authors.each do |external_author|
+    external_authors = ExternalAuthor.select("DISTINCT external_authors.*").joins(:external_creatorships).where("creation_id IN (?) AND creation_type = 'Work'", work_ids)
+    external_authors.each do |external_author|
       external_author.find_or_invite(archivist)
     end
   end
-
 
   
   # add to a collection and approve the item
@@ -107,7 +108,8 @@ namespace :massimport do
   def load_automated_archive_comments_for_work(work, base_dir, location, comment_parse_method)
     comment_count = 0
     self.send(comment_parse_method, base_dir, location).each do |comment|
-      comment_object = Comment.new(:commentable_type => 'Chapter', :commentable_id => work.chapters.last.id, :name => comment[:name], :email => comment[:email], :content => comment[:content])
+      comment_object = Comment.new(:commentable_type => 'Chapter', commentable_id: work.chapters.last.id, name: comment[:name], email: comment[:email], 
+        created_at: comment[:created_at], content: comment[:content])
       if comment_object.save
         comment_count += 1
       else
@@ -144,76 +146,100 @@ namespace :massimport do
     message("Running load_automated_archive_works")
     work_ids = []
     errors = []
+    
+    fandom_mapping_file = ask("Fandom remapping file? (should be in same base dir) ")
+    # read fandom mapping
+    @fandom_mapping = read_fandom_mapping(options[:base_dir] + fandom_mapping_file)
+    
+    
     db.each do |work_params|
       begin
         # clean out any attributes we want to use for processing but that aren't part of AO3 work attributes
         location = work_params.delete(:location)
         filetype = work_params.delete(:filetype)
-        # storyfile = options[:base_dir] + "archive/#{location}.#{filetype}"
-        storyfile = options[:base_dir] + "/#{location}.#{filetype}"
+        storyfile = options[:base_dir] + "archive/#{location}.#{filetype}"
+        #storyfile = options[:base_dir] + "#{location}.#{filetype}"
   
         message("\nProcessing " + storyfile)
-        url = options[:base_url] + "/#{location}.#{filetype}"
+        url = options[:base_url] + "#{location}.#{filetype}"
   
         # check to see if it's already imported
         work = Work.find_by_imported_from_url(url)
         if work
+          # if retrying after a failure just go on
+          if options[:retry]
+            message("\nSkipping")
+            next
+          end
+          
+          # don't recreate the work but do add it to the collection/add comments
           collection_names = work_params[:collection_names].split(/,\s?/)
           Collection.where(:name => collection_names).each do |c|
             work.collections << c unless work.collections.include?(c)
             message("Added existing work #{work.title} to #{c.title}")
           end
           work_ids << work.id
-          next # don't recreate the work
-        end
-  
-        # read the story file and update the work params accordingly
-        story = File.read(storyfile, :encoding => 'ISO-8859-1') rescue ""
-        work_params = self.send(options[:story_parse_method], work_params, story)
-  
-        # replace email when testing
-        #work_params[:email] = options[:author_email] if options[:author_email]
-  
-        # get the author
-        author = work_params.delete(:author)
-        emails = work_params.delete(:email) || ""
-        external_author_names = emails.split(',').map {|email| @storyparser.parse_author_common(email, author)}
-  
-        # create the work and set it up
-        work = @storyparser.set_work_attributes(Work.new(work_params), url,
-                                storyparser_options.merge(:imported_from_url => url, :external_author_names => external_author_names))
-  
-        # check for errors
-        if work && work.valid?
-          message("Loaded work: #{work.external_creatorships.each {|ec| ec.to_s}.join}")
-          work.chapters.each do |chap|
-            chap.published_at = work.revised_at
-            chap.save
-          end
-          work.save
-          work.set_word_count
-          work.save
-  
-          # get the comments
-          if options[:load_comments] && options[:comment_parse_method]
-            load_automated_archive_comments_for_work(work, options[:base_dir], location, options[:comment_parse_method])
-          end
-  
-          work_ids << work.id
         else
-          errors << "\nProblem with #{work_params[:title]}: \n" + work.errors.full_messages.join(', ') + "\n" + work_params.to_yaml
   
+          # read the story file and update the work params accordingly
+          story = File.read(storyfile, :encoding => 'ISO-8859-1') rescue ""
+          work_params = self.send(options[:story_parse_method], work_params, story)
+  
+          # replace email unless we've been specifically told not to
+          unless options[:author_email]
+            username = work_params[:email] ? work_params[:email].split("@").first.split("+").first : "noemail"
+            work_params[:email] = "shalott+y#{username}@gmail.com"
+          end
+  
+          # get the author
+          author = work_params.delete(:author)
+          emails = work_params.delete(:email) || ""
+          external_author_names = emails.split(',').map {|email| @storyparser.parse_author_common(email, author)}
+          
+          # remap fandoms
+          if @fandom_mapping && work_params[:fandom_string] && @fandom_mapping[work_params[:fandom_string]]
+            work_params[:fandom_string] = @fandom_mapping[work_params[:fandom_string]]
+          end
+              
+          # create the work and set it up
+          work = @storyparser.set_work_attributes(Work.new(work_params), url,
+                                  storyparser_options.merge(:imported_from_url => url, :external_author_names => external_author_names))
+  
+          # check for errors
+          if work && work.valid?
+            work.save
+            work.set_word_count
+            work.save
+            really_set_revised_at(work)
+            work_ids << work.id
+            message("Loaded work: #{work.external_creatorships.each {|ec| ec.to_s}.join}")
+          else
+            errors << "\nProblem with #{work_params[:title]}: \n" + work.errors.full_messages.join(', ') #+ "\n" + work_params.to_yaml  
+          end
+        end
+          
+        # get the old comments even if the work was already imported 
+        # won't import duplicates
+        if options[:load_comments] && options[:comment_parse_method]
+          load_automated_archive_comments_for_work(work, options[:base_dir], location, options[:comment_parse_method])
         end
       rescue Exception => e
-        errors << "We ran into a problem on #{work_params[:title]}: " + e.message # + e.backtrace.join("\n")
+        errors << "We ran into a problem on #{work_params[:title]}: " + e.message #+ e.backtrace.join("\n")
       end
     end
   
     message(errors.join("\n"))
     return work_ids
   end
-
-
+  
+  # have to call this after the work is saved
+  def really_set_revised_at(work)
+    work.chapters.each do |chap|
+      chap.published_at = work.revised_at
+      chap.save
+    end
+  end
+  
   # Run the whole rescue
   # options:
   ## :author_email -- if set use this as the author for all the imported stories, for testing only
@@ -221,7 +247,7 @@ namespace :massimport do
   ## :
   def automated_archive_rescue(options = {})
     options.reverse_merge!({
-      :send_invites => true,
+      :send_invites => "true",
       :archivist_login => nil,
       :archive_file => "ARCHIVE_DB.pl",
       :attrs_to_keep => [],
@@ -235,7 +261,7 @@ namespace :massimport do
     })
   
     base_dir = get_base_dir
-  
+    
     archivist_login = options[:archivist_login] || ask("Archivist login?")
     archivist = User.find_by_login(archivist_login)
     unless archivist && archivist.is_archivist?
@@ -246,16 +272,19 @@ namespace :massimport do
     # load db
     db = load_automated_archive_db(base_dir + options[:archive_file], options[:attrs_to_keep], options[:attr_mapping], options[:val_mapping], options[:values_to_set])
   
+    # don't send comment emails if importing old comments! turn off observer
+    Comment.observers.disable :comment_observer
+    
     # create works and comments
     work_ids = load_automated_archive_works(archivist, db, :base_url => options[:base_url], :base_dir => base_dir,
                   :story_parse_method => options[:story_parse_method],
                   :load_comments => options[:load_comments], :comment_parse_method => options[:comment_parse_method],
-                  :author_email => options[:author_email])
-  
-    # send invites and notifications if the command line option is set
+                  :author_email => options[:author_email], :retry => options[:retry])
+
+    # send invites and notifications if the option is set
     if options[:send_invites] == "true"
       message("Sending invites and notifications")
-  
+
       send_external_invites(work_ids, archivist)
     end
   end
@@ -306,11 +335,11 @@ namespace :massimport do
       u.age_over_13 = "1"
       u.terms_of_service = "1"
       u.password_confirmation = archivist_password
-      u.save
+      u.save!
     end
     unless u.is_archivist?
       u.roles << Role.find_by_name("archivist")
-      u.save
+      u.save!
     end
     # make the collection if it doesn't exist already
     @collection_name ||= ask("Collection name (no spaces or extended characters)? ")
@@ -319,16 +348,16 @@ namespace :massimport do
       @collection_title ||= ask("Collection title? ")
       c.title = @collection_title
     else
-      collection_title = c.title
+      @collection_title = c.title
     end
     # add the user as an owner if not already one
     unless c.owners.include?(u.default_pseud)
       p = c.collection_participants.where(:pseud_id => u.default_pseud.id).first || c.collection_participants.build(:pseud => u.default_pseud)
       p.participant_role = "Owner"
-      c.save
-      p.save
+      c.save!
+      p.save!
     end
-    c.save
+    c.save!
     puts "Archivist #{u.login} set up as owner of collection #{c.title} (#{c.name})."
   end
 
@@ -351,7 +380,7 @@ namespace :massimport do
   
     base_url = "http://www.852prospect.org/archive/archive"
     archive_file = ask("Name of archive file (eg: ARCHIVE_DB.pl)? ") # "ARCHIVE_MINI.pl"
-    author_email = nil
+    author_email = false
   
     message("Archive file: #{archive_file}")
   
@@ -456,21 +485,21 @@ namespace :massimport do
   # - if you want to load comments define a method for that (see get_comments_from_yuletide)
   desc "Import the Yuletide archive OMG"
   task(:yuletide => :environment) do
-    @archivist_login = "YuletideArchivist"
+    
+    # the archivist account that will be the actual owner of the story files initially
+    @archivist_login = "yuletide_archivist"
 
     # The base url for the original archive directory
     base_url = "http://yuletidetreasure.org/archive/"
     
     # The archive_db.pl file (you probably want to test with an abbreviated version first)
-    archive_file = "yuletide_abbrev_db.pl" # 'ARCHIVE_DB.pl'
+    archive_file = 'ARCHIVE_DB.pl' # "yuletide_abbrev_db.pl"
 
     # Use this for testing or you'll spam actual users
-    author_email = "shalott+yuletidetesting@gmail.com"
-    
-    # the archivist account that will be the actual owner of the story files initially
+    author_email = false # will convert all emails to gmail + addresses, set to true to send
     
     # specify which attributes to keep from the db - will have to delete any that are not valid work attributes
-    attrs_to_keep = %w(author date email fandom rating summary title recipient location filetype writtenfor)
+    attrs_to_keep = %w(author date email fandom rating summary title location filetype recipient writtenfor)
     
     # change some attribute names
     # IMPORTANT: author name and email are already in :author, :email (required for parsing the author)
@@ -478,8 +507,8 @@ namespace :massimport do
       :fandom => :fandom_string,
       :rating => :rating_string,
       :writtenfor => :collection_names,
-      :date => :revised_at,
-      :recipient => :recipients
+      # :recipient => :recipients,
+      :date => :revised_at
     })
     
     # run some attributes through storyparser cleanup routines
@@ -493,7 +522,7 @@ namespace :massimport do
     automated_archive_rescue(:archivist_login => @archivist_login, :base_url => base_url, :author_email => author_email, 
       :attrs_to_keep => attrs_to_keep, :attr_mapping => attr_mapping, :val_mapping => val_mapping,
       :archive_file => archive_file, :story_parse_method => :parse_content_from_yuletide_file, :comment_parse_method => :get_comments_from_yuletide, 
-      :load_comments => true)
+      :load_comments => true, :retry => true)
   end
   
   ### SSA
@@ -506,7 +535,7 @@ namespace :massimport do
 
     base_url = "http://smallville.slashdom.net/archive"
     archive_file = "ARCHIVE_DB.pl"
-    author_email = nil # for testing use: "shalott+ssatesting@gmail.com"
+    author_email = false # for testing use false
     
     # specify which attributes to keep from the db - will have to delete any that are not valid work attributes
     attrs_to_keep = %w(author category date email rating pairing summary title location filetype)
@@ -542,7 +571,7 @@ namespace :massimport do
   task(:dsa => :environment) do
     base_url = "http://www.squidge.org/dsa/archive"
     archive_file = "dsa_abbrev.pl"
-    author_email = "shalott+dsatest@gmail.com"
+    author_email = false
     archivist = "dsa_archivist"
     c = Collection.find_by_name("dsa")
     unless c
@@ -816,16 +845,19 @@ namespace :massimport do
     commentdoc.css('.form table.form tr').each do |row|
       name = row.css('td')[0].inner_text.match(/From: (.*)\n?Date/) ? $1 : "Unknown Commenter"
       name.gsub(/ \(.*\@.*\)/, '') # strip emails
+      created_at = row.css('td')[0].inner_text.match(/Date: (.*)/) ? Timeliness.parse($1, :format => "mm/dd/yyyy") : nil
       text = row.css('td')[1].inner_text
       next unless text
       # encode to UTF-8
       comment = HashWithIndifferentAccess.new({
                   :email => "yuletidecommenter@gmail.com",
+                  :created_at => created_at,
                   :name => name.encode("UTF-8", :invalid => :replace, :undef => :replace, :replace => ""), 
                   :content => text.encode("UTF-8", :invalid => :replace, :undef => :replace, :replace => "")})
       comments << comment
     end
-    comments
+    # so they get added to the work in the same order they were 
+    comments.reverse
   end
 
   # This gets the content out of a yuletide story file
@@ -851,10 +883,32 @@ namespace :massimport do
     @storyparser ||= StoryParser.new
     content = @storyparser.clean_storytext(content)
     content.gsub!(/<a href="\//, '<a href="http://yuletidetreasure.org/')
+
+    # Put the recipient into the notes
+    work_params[:notes] ||= ""
+    work_params[:notes] += "<p>Written for #{work_params[:recipient]}</p>"
+    work_params.delete(:recipient)
+    
+    # Convert the fandom
     
     work_params[:chapter_attributes] = HashWithIndifferentAccess.new({:content => content})
+    work_params
   end
 
+  # Expects a file of format [old fandom] ==> [AO3 fandom]
+  def read_fandom_mapping(filename)
+    fandom_mapping = {}
+    mapping_file = File.read(filename) rescue ""
+    mapping_file.split(/\n/).each do |line|
+      next if line.blank? || line.match(/^#/)
+      if line.match /^(.*) ==> (.*)$/
+        oldf = $1.trim
+        newf = $2.trim
+        fandom_mapping[oldf] = newf
+      end
+    end
+    return fandom_mapping
+  end
 
 
 end
