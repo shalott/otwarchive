@@ -493,7 +493,7 @@ namespace :massimport do
     base_url = "http://yuletidetreasure.org/archive/"
     
     # The archive_db.pl file (you probably want to test with an abbreviated version first)
-    archive_file = 'ARCHIVE_DB.pl' # "yuletide_abbrev_db.pl"
+    archive_file = "yuletide_abbrev_db.pl" # 'ARCHIVE_DB.pl' # 
 
     # Use this for testing or you'll spam actual users
     author_email = false # will convert all emails to gmail + addresses, set to true to send
@@ -902,8 +902,8 @@ namespace :massimport do
     mapping_file.split(/\n/).each do |line|
       next if line.blank? || line.match(/^#/)
       if line.match /^(.*) ==> (.*)$/
-        oldf = $1.trim
-        newf = $2.trim
+        oldf = $1.strip
+        newf = $2.strip
         fandom_mapping[oldf] = newf
       end
     end
