@@ -9,5 +9,5 @@ namespace :db do
   
   desc "Reset and then seed the development database with test data from the fixtures"
   task :otwseed => [:environment, :development_environment_only, :reset, 'fixtures:load', 'work:missing_stat_counters', 
-    'Tag:reset_filters', 'Tag:reset_filter_counts', 'skins:load_site_skins']
+    'Tag:reset_filters', 'Tag:reset_filter_counts', 'skins:load_site_skins', 'autocomplete:load_data']
 end
