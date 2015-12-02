@@ -270,17 +270,44 @@ class ChallengeAssignment < ActiveRecord::Base
     new_assignment.save && save
   end
 
+  def assigned_to_user
+    if self.offer_signup
+      return self.offer_signup.pseud.user
+    elsif self.pinch_hitter 
+      return self.pinch_hitter.user
+    else
+      return nil
+    end
+  end
+
   def send_out
     # don't resend!
     unless self.sent_at
       self.sent_at = Time.now
       save
-      assigned_to = self.offer_signup ? self.offer_signup.pseud.user : (self.pinch_hitter ? self.pinch_hitter.user : nil)
       request = self.request_signup || self.pinch_request_signup
-      UserMailer.challenge_assignment_notification(collection.id, assigned_to.id, self.id).deliver if assigned_to && request
+      UserMailer.challenge_assignment_notification(collection.id, assigned_to_user.id, self.id).deliver if assigned_to_user && request
     end
   end
-
+  
+  def assigned_deleted
+    assignment.offer_signup = nil
+    assignment.default 
+  end    
+  
+  def recipient_deleted
+    assignment.notify_of_recipient_delete
+    assignment.request_signup = nil
+    assignment.save    
+  end
+  
+  def notify_of_recipient_delete
+    if assigned_to_user
+      UserMailer.challenge_recipient_delete(collection.id, assigned_to_user.id, self.id).deliver
+      UserMailer.challenge_signup_delete(collection.id, assigned_to_user.id, self.id).deliver
+    end
+  end
+  
   @queue = :collection
   # This will be called by a worker when a job needs to be processed
   def self.perform(method, *args)

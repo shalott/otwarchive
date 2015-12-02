@@ -190,6 +190,25 @@ class UserMailer < BulletproofMailer::Base
     )
   end
 
+  def challenge_signup_delete(collection_id, assigned_user_id)
+    @collection = Collection.find(collection_id)
+    @assigned_user = User.find(assigned_user_id)
+    mail(
+      to: @collection.get_maintainers_email,
+      subject: "[#{ArchiveConfig.APP_SHORT_NAME}][#{@collection.title}] Participant Deleted"
+    )
+  end
+  
+  def challenge_recipient_delete(collection_id, assigned_user_id, assignment_id)
+    @collection = Collection.find(collection_id)
+    @assigned_user = User.find(assigned_user_id)
+    @assignment = ChallengeAssignment.find(assignment_id)
+    mail(
+      to:assigned_user.email,
+      subject: "[#{ArchiveConfig.APP_SHORT_NAME}][#{@collection.title}] A Notice About Your Assignment"
+    )
+  end
+
   # Asks a user to validate and activate their new account
   def signup_notification(user_id)
     @user = User.find(user_id)

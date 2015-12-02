@@ -1,0 +1,23 @@
+<% content_for :message do %>
+  <p>Dear Collection Maintainers!</p>
+
+  <p>
+    Unfortunately, an assigned participant in your <%= style_link(@collection.title, collection_url(@collection)) %> challenge has deleted their signup. (This normally can only occur if a user deletes their entire AO3 account.)
+  </p>
+  
+  <p>
+    The user <%= @assigned_user.login %> was assigned to write for them. We have notified them of the deletion of the recipient's account. They can either default or fulfill the assignment as usual. If you have a preference, you may wish to contact them. 
+  </p>
+  
+  <p>
+    If they were assigned to write for someone else, you will find that assignment on the Defaulted tab of the assignments for your challenge, where you can assign a pinch hitter to replace them. 
+  </p>
+<% end %>
+
+<% content_for :footer_note do %>
+  You're receiving this email because you signed up for the <%= style_footer_link(@collection.title, collection_url(@collection)) %> challenge. For more information about this challenge and contact information for the moderators, please visit <%= style_footer_link("the challenge profile page", collection_profile_url(@collection)) %>.
+<% end %>
+
+<% content_for :sent_at do %>
+  <%= Time.now.to_s(:time_for_mailers) %>
+<% end %>

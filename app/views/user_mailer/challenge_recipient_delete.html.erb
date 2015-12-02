@@ -1,0 +1,21 @@
+<% content_for :message do %>
+  <p>
+    Unfortunately, your assigned recipient in the <%= style_link(@collection.title, collection_url(@collection)) %> challenge has deleted their signup. (This normally only occurs if a user deletes their entire AO3 account.)
+  </p>
+  
+  <p>
+    We cannot store their signup content after they delete their account, so it is no longer available to you at the AO3, but you can still either fulfill or default on your assignment: it will simply not fill in the recipient's name when you do so. 
+  </p>
+  
+  <p>
+    The moderators of the challenge have been notified as well. You can reach out to them for further help specific to the challenge.    
+  </p>
+<% end %>
+
+<% content_for :footer_note do %>
+  You're receiving this email because you signed up for the <%= style_footer_link(@collection.title, collection_url(@collection)) %> challenge. For more information about this challenge and contact information for the moderators, please visit <%= style_footer_link("the challenge profile page", collection_profile_url(@collection)) %>.
+<% end %>
+
+<% content_for :sent_at do %>
+  <%= Time.now.to_s(:time_for_mailers) %>
+<% end %>

@@ -73,6 +73,8 @@ module NavigationHelpers
       user_claims_path(User.current_user)
     when /my signups page/
       user_signups_path(User.current_user)
+    when /my assignments page/
+      user_assignments_path(User.current_user)
     when /my related works page/
       user_related_works_path(User.current_user)
     when /my inbox page/

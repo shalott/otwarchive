@@ -255,7 +255,7 @@ class UsersController < ApplicationController
   # DELETE /users/1.xml
   def destroy
     @hide_dashboard = true
-    @works = @user.works.find(:all, :conditions => {:posted => true})
+    @works = @user.works.where(posted: true)
     @sole_owned_collections = @user.collections.delete_if {|collection| (collection.all_owners - @user.pseuds).size > 0}
 
     if @works.empty? && @sole_owned_collections.empty?

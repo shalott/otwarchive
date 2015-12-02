@@ -19,10 +19,10 @@ class ChallengeSignup < ActiveRecord::Base
 
   before_destroy :clear_assignments_and_claims
   def clear_assignments_and_claims
-    # remove this signup reference from any existing assignments
-    offer_assignments.each {|assignment| assignment.offer_signup = nil; assignment.save}
-    request_assignments.each {|assignment| assignment.request_signup = nil; assignment.save}
     request_claims.each {|claim| claim.destroy}
+    # remove this signup reference from any existing assignments
+    offer_assignments.each { |assignment| assignment.assigned_deleted }
+    request_assignments.each { |assignment| assignment.recipient_deleted }
   end
 
   # we reject prompts if they are empty except for associated references

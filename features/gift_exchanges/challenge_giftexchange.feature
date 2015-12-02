@@ -255,17 +255,8 @@ Feature: Gift Exchange Challenge
       And the email html body should link to the works tagged "Stargate Atlantis"
 
   Scenario: User signs up for two gift exchanges at once #'
-    Given I am logged in as "mod1"
-      And I have created the gift exchange "Awesome Gift Exchange"
-      And I open signups for "Awesome Gift Exchange"
-      And everyone has signed up for the gift exchange "Awesome Gift Exchange"
-      And I have generated matches for "Awesome Gift Exchange"
-      And I have sent assignments for "Awesome Gift Exchange"
-    Given I have created the gift exchange "Second Challenge" with name "testcoll2"
-      And I open signups for "Second Challenge"
-      And everyone has signed up for the gift exchange "Second Challenge"
-      And I have generated matches for "Second Challenge"
-      And I have sent assignments for "Second Challenge"
+    Given "Awesome Gift Exchange" challenge is in the writing stage
+      And "Second Challenge" challenge is in the writing stage
     When I am logged in as "myname1"
       And I start to fulfill my assignment
       # This is in fact a bug - only one of them should be checked
@@ -295,12 +286,7 @@ Feature: Gift Exchange Challenge
     Then I should not see "othername"
 
   Scenario: Mod can see everyone's assignments, includind users' emails
-    Given I am logged in as "mod1"
-      And I have created the gift exchange "Awesome Gift Exchange"
-      And I open signups for "Awesome Gift Exchange"
-      And everyone has signed up for the gift exchange "Awesome Gift Exchange"
-      And I have generated matches for "Awesome Gift Exchange"
-      And I have sent assignments for "Awesome Gift Exchange"
+    Given "Awesome Gift Exchange" challenge is in the writing stage
     When I go to the "Awesome Gift Exchange" assignments page
       Then I should see "Assignments for Awesome"
     When I follow "Open"
@@ -309,12 +295,7 @@ Feature: Gift Exchange Challenge
       And I should see the image "alt" text "email myname1"
 
   Scenario: User can see their assignment, but no email links
-    Given I am logged in as "mod1"
-      And I have created the gift exchange "Awesome Gift Exchange"
-      And I open signups for "Awesome Gift Exchange"
-      And everyone has signed up for the gift exchange "Awesome Gift Exchange"
-      And I have generated matches for "Awesome Gift Exchange"
-      And I have sent assignments for "Awesome Gift Exchange"
+    Given "Awesome Gift Exchange" challenge is in the writing stage
     When I am logged in as "myname1"
       And I go to my user page
       And I follow "Assignments"
@@ -344,7 +325,6 @@ Feature: Gift Exchange Challenge
   Scenario: Download signups CSV
     Given I am logged in as "mod1"
     And I have created the gift exchange "My Gift Exchange"
-
     When I go to the "My Gift Exchange" signups page
     And I follow "Download (CSV)"
     Then I should get a file with ending and type csv
@@ -417,3 +397,29 @@ Feature: Gift Exchange Challenge
     When I am logged in as "myname2"
       And I delete my signup for the gift exchange "Awesome Gift Exchange"
     Then I should see "Challenge sign-up was deleted."
+
+  Scenario: User deletes account after assignments are sent
+    Given "Awesome Gift Exchange" challenge is in the writing stage
+      And all emails have been delivered
+    When I am logged in as "myname3"
+      And I delete my account as myname3
+    Then "mod1" should be emailed
+      And the email to "mod1" should contain "A participant in your challenge has deleted their account"
+      And "myname4" should be emailed
+      And the email to "myname4" should contain "Your recipient has deleted their account"
+    When I am logged in as "myname4"
+      And I go to my assignments page
+    Then I should see "Awesome Gift Exchange"
+      And I should see "Fulfill"
+      And I should see "Default"
+      And I should see "(deleted signup)"
+      And I should not see "myname3"
+    When I am logged in as "mod1"
+      And I go to the "Awesome Gift Exchange" assignments page
+    Then I should see "(deleted account)"
+      And I should see "myname4"
+      And I should not see "myname3"
+    When I follow "Open"
+    Then I should see "myname4"
+      And I should see "for (deleted signup)"
+      

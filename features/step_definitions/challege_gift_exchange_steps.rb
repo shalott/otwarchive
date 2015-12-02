@@ -94,8 +94,8 @@ When /^I sign up for "([^\"]*)" with combination B$/ do |title|
   step %{I start signing up for "#{title}"}
     step %{I check the 1st checkbox with value "Stargate SG-1"}
     step %{I check the 2nd checkbox with the value "Stargate Atlantis"}
-    step %{I fill in the 1st field with id matching "freeform_tagnames" with "Alternate Universe - High School, Something else weird"}
-    step %{I fill in the 2nd field with id matching "freeform_tagnames" with "Alternate Universe - High School"}
+    step %{I fill in the 1st field with id matching "freeform_tagnames" with "Alternate Universe - High School"}
+    step %{I fill in the 2nd field with id matching "freeform_tagnames" with "Alternate Universe - Historical"}
     click_button "Submit"
 end
 
@@ -238,11 +238,11 @@ When /^I start to fulfill my assignment$/ do
   step %{I am on my user page}
   step %{I follow "Assignments ("}
   step %{I follow "Fulfill"}
-    step %{I fill in "Work Title" with "Fulfilled Story"}
-    step %{I select "Not Rated" from "Rating"}
-    step %{I check "No Archive Warnings Apply"}
-    step %{I fill in "Fandom" with "Final Fantasy X"}
-    step %{I fill in "content" with "This is a really cool story about Final Fantasy X"}
+  step %{I fill in "Work Title" with "Fulfilled Story"}
+  step %{I select "Not Rated" from "Rating"}
+  step %{I check "No Archive Warnings Apply"}
+  step %{I fill in "Fandom" with "Final Fantasy X"}
+  step %{I fill in "content" with "This is a really cool story about Final Fantasy X"}
 end
 
 When /^I fulfill my assignment$/ do
@@ -261,8 +261,6 @@ When /^I fulfill my assignment and the author is "([^\"]*)"$/ do |new_user|
   step %{I should see "Work was successfully posted"}
 end
 
-
-
 When /^I have set up matching for "([^\"]*)" with no required matching$/ do |challengename|
   step %{I am logged in as "mod1"}
   step %{I have created the gift exchange "Awesome Gift Exchange"}
@@ -270,4 +268,11 @@ When /^I have set up matching for "([^\"]*)" with no required matching$/ do |cha
   step %{everyone has signed up for the gift exchange "Awesome Gift Exchange"}
 end
 
-
+When /^(?:the )?"([^\"]*)" challenge is in the writing stage$/ do |challengename|
+  step %{I am logged in as "mod1"}
+  step %{I have created the gift exchange "#{challengename}"}
+  step %{I open signups for "#{challengename}"}
+  step %{everyone has signed up for the gift exchange "#{challengename}"}
+  step %{I have generated matches for "#{challengename}"}
+  step %{I have sent assignments for "#{challengename}"}
+end  

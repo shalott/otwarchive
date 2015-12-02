@@ -176,7 +176,7 @@ When /^I fill in the sign up form with valid data$/ do
   step(%{I check "user_terms_of_service"})
 end
 
-When /^I try to delete my account as (.*)$/ do |login|
+When /^I (?:try to )?delete my account as (.*)$/ do |login|
   step (%{I go to #{login}\'s user page})
   step (%{I follow "Profile"})
   step (%{I follow "Delete My Account"})
